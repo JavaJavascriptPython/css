@@ -55,3 +55,75 @@ export class TpsChartComponent implements OnChanges {
     };
   }
 }
+
+
+
+import { Component, Input, OnChanges } from '@angular/core';
+import { EChartsOption } from 'echarts';
+
+@Component({
+  selector: 'app-tps-chart',
+  template: `<div echarts [options]="chartOption" class="h-96 w-full"></div>`,
+})
+export class TpsChartComponent implements OnChanges {
+  @Input() xData: string[] = []; // e.g. ["06:00:00", "06:00:01", ...]
+  @Input() yData: number[] = []; // e.g. [120, 118, ...]
+
+  chartOption: EChartsOption = {};
+
+  ngOnChanges(): void {
+    this.chartOption = {
+      title: {
+        text: 'TPS Count vs Time',
+        left: 'center'
+      },
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'cross' }
+      },
+      toolbox: {
+        feature: {
+          saveAsImage: {}, // download button
+          dataZoom: {}     // zoom reset button
+        }
+      },
+      xAxis: {
+        type: 'category',
+        data: this.xData,
+        boundaryGap: false,
+        axisLabel: {
+          formatter: (value: string) => {
+            // Only show HH:mm (skip seconds for readability)
+            return value.slice(0,5);
+          }
+        }
+      },
+      yAxis: {
+        type: 'value',
+        name: 'TPS Count'
+      },
+      dataZoom: [
+        {
+          type: 'inside', // zoom with scroll/mouse
+          start: 0,
+          end: 20 // show first 20% by default
+        },
+        {
+          type: 'slider', // zoom bar below chart
+          start: 0,
+          end: 20
+        }
+      ],
+      series: [
+        {
+          name: 'TPS',
+          type: 'line',
+          data: this.yData,
+          smooth: true,
+          areaStyle: {},
+          showSymbol: false // hide circle markers (too many points)
+        }
+      ]
+    };
+  }
+}
