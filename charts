@@ -1,0 +1,57 @@
+import { NgxEchartsModule } from 'ngx-echarts';
+
+@NgModule({
+  imports: [
+    NgxEchartsModule.forRoot({
+      echarts: () => import('echarts')
+    })
+  ]
+})
+export class AppModule {}
+
+
+
+
+import { Component, Input, OnChanges } from '@angular/core';
+import { EChartsOption } from 'echarts';
+
+@Component({
+  selector: 'app-tps-chart',
+  template: `<div echarts [options]="chartOption" class="h-96 w-full"></div>`,
+})
+export class TpsChartComponent implements OnChanges {
+  @Input() xData: string[] = []; // e.g. ["06:00", "07:00", ...]
+  @Input() yData: number[] = []; // e.g. [100, 150, 90, ...]
+
+  chartOption: EChartsOption = {};
+
+  ngOnChanges(): void {
+    this.chartOption = {
+      title: {
+        text: 'TPS Count vs Time',
+        left: 'center'
+      },
+      tooltip: {
+        trigger: 'axis'
+      },
+      xAxis: {
+        type: 'category',
+        data: this.xData,
+        boundaryGap: false
+      },
+      yAxis: {
+        type: 'value',
+        name: 'TPS Count'
+      },
+      series: [
+        {
+          name: 'TPS',
+          type: 'line',
+          data: this.yData,
+          smooth: true,
+          areaStyle: {} // fill under the line
+        }
+      ]
+    };
+  }
+}
