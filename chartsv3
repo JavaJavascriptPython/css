@@ -1,0 +1,155 @@
+import { NgModule } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
+import { HttpClientModule } from '@angular/common/http';
+import { NgxEchartsModule } from 'ngx-echarts';
+
+import { AppComponent } from './app.component';
+import { TpsChartComponent } from './tps-chart/tps-chart.component';
+
+@NgModule({
+  declarations: [
+    AppComponent,
+    TpsChartComponent
+  ],
+  imports: [
+    BrowserModule,
+    HttpClientModule,
+    NgxEchartsModule.forRoot({
+      echarts: () => import('echarts')
+    })
+  ],
+  providers: [],
+  bootstrap: [AppComponent]
+})
+export class AppModule {}
+
+
+
+
+
+
+import { Component, Input, OnChanges } from '@angular/core';
+import { EChartsOption } from 'echarts';
+
+@Component({
+  selector: 'app-tps-chart',
+  template: `<div echarts [options]="chartOption" class="h-96 w-full"></div>`,
+})
+export class TpsChartComponent implements OnChanges {
+  @Input() xData: string[] = [];
+  @Input() yData: number[] = [];
+
+  chartOption: EChartsOption = {};
+
+  ngOnChanges(): void {
+    this.chartOption = {
+      title: {
+        text: 'TPS Count vs Time',
+        left: 'center'
+      },
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'cross' }
+      },
+      toolbox: {
+        feature: {
+          saveAsImage: {},
+          dataZoom: {}
+        }
+      },
+      xAxis: {
+        type: 'category',
+        data: this.xData,
+        boundaryGap: false,
+        axisLabel: {
+          formatter: (value: string) => value.slice(0, 5) // Show only HH:mm
+        }
+      },
+      yAxis: {
+        type: 'value',
+        name: 'TPS Count'
+      },
+      dataZoom: [
+        {
+          type: 'inside',
+          start: 0,
+          end: 20
+        },
+        {
+          type: 'slider',
+          start: 0,
+          end: 20
+        }
+      ],
+      series: [
+        {
+          name: 'TPS',
+          type: 'line',
+          data: this.yData,
+          smooth: true,
+          areaStyle: {},
+          showSymbol: false
+        }
+      ]
+    };
+  }
+}
+
+
+
+
+
+import { Component, OnInit } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+
+@Component({
+  selector: 'app-root',
+  templateUrl: './app.component.html'
+})
+export class AppComponent implements OnInit {
+  chartData = { x_data: [], y_data: [] };
+
+  constructor(private http: HttpClient) {}
+
+  ngOnInit(): void {
+    this.http.get<any>('http://yourserver/cgi-bin/tps.cgi').subscribe(response => {
+      const { xData, yData } = this.formatData(response.tpsdist);
+      this.chartData = { x_data: xData, y_data: yData };
+    });
+  }
+
+  private formatData(tpsdist: any) {
+    const xData: string[] = [];
+    const yData: number[] = tpsdist.ydata;
+
+    let currentHour = 6;
+    let currentMinute = 0;
+    let currentSecond = 0;
+
+    for (let i = 0; i < yData.length; i++) {
+      const hh = String(currentHour).padStart(2, '0');
+      const mm = String(currentMinute).padStart(2, '0');
+      const ss = String(currentSecond).padStart(2, '0');
+      xData.push(`${hh}:${mm}:${ss}`);
+
+      currentSecond++;
+      if (currentSecond >= 60) {
+        currentSecond = 0;
+        currentMinute++;
+      }
+      if (currentMinute >= 60) {
+        currentMinute = 0;
+        currentHour++;
+      }
+    }
+
+    return { xData, yData };
+  }
+}
+
+
+
+
+<div class="p-4">
+  <app-tps-chart [xData]="chartData.x_data" [yData]="chartData.y_data"></app-tps-chart>
+</div>
