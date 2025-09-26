@@ -1,0 +1,141 @@
+use JSON;
+
+print "Content-Type: application/json\n\n";
+print encode_json(\%output);
+
+
+
+
+this.http.get<any>('http://yourserver/cgi-bin/tps.cgi')
+  .subscribe(response => {
+    const { xData, yData } = this.formatData(response.tpsdist);
+    this.chartData = { x_data: xData, y_data: yData };
+  });
+
+
+
+
+formatData(tpsdist: any) {
+  const xData: string[] = [];
+  const yData: number[] = tpsdist.ydata;
+
+  // Expand "06:00" repeated into "06:00:00", "06:00:01", ...
+  let currentHour = 6;
+  let currentMinute = 0;
+  let currentSecond = 0;
+
+  for (let i = 0; i < yData.length; i++) {
+    // Format time
+    const hh = String(currentHour).padStart(2, '0');
+    const mm = String(currentMinute).padStart(2, '0');
+    const ss = String(currentSecond).padStart(2, '0');
+    xData.push(`${hh}:${mm}:${ss}`);
+
+    // Increment second
+    currentSecond++;
+    if (currentSecond >= 60) {
+      currentSecond = 0;
+      currentMinute++;
+    }
+    if (currentMinute >= 60) {
+      currentMinute = 0;
+      currentHour++;
+    }
+  }
+
+  return { xData, yData };
+}
+
+
+
+
+ngOnInit() {
+  // Suppose you already fetched JSON from backend
+  const perlOutput = {
+    tpsdist: {
+      ydata: [2177, 1234, 7654, 5642, ...],
+      xdata: ["06:00","06:00","06:00", ..., "23:00"]
+    }
+  };
+
+  const { xData, yData } = this.formatData(perlOutput.tpsdist);
+
+  this.chartData = { x_data: xData, y_data: yData };
+}
+
+
+
+<app-tps-chart [xData]="chartData.x_data" [yData]="chartData.y_data"></app-tps-chart>
+
+
+
+
+import { Component, Input, OnChanges } from '@angular/core';
+import { EChartsOption } from 'echarts';
+
+@Component({
+  selector: 'app-tps-chart',
+  template: `<div echarts [options]="chartOption" class="h-96 w-full"></div>`,
+})
+export class TpsChartComponent implements OnChanges {
+  @Input() xData: string[] = []; // e.g. ["06:00:00", "06:00:01", ...]
+  @Input() yData: number[] = []; // e.g. [120, 118, ...]
+
+  chartOption: EChartsOption = {};
+
+  ngOnChanges(): void {
+    this.chartOption = {
+      title: {
+        text: 'TPS Count vs Time',
+        left: 'center'
+      },
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'cross' }
+      },
+      toolbox: {
+        feature: {
+          saveAsImage: {}, // download button
+          dataZoom: {}     // zoom reset button
+        }
+      },
+      xAxis: {
+        type: 'category',
+        data: this.xData,
+        boundaryGap: false,
+        axisLabel: {
+          formatter: (value: string) => {
+            // Only show HH:mm (skip seconds for readability)
+            return value.slice(0,5);
+          }
+        }
+      },
+      yAxis: {
+        type: 'value',
+        name: 'TPS Count'
+      },
+      dataZoom: [
+        {
+          type: 'inside', // zoom with scroll/mouse
+          start: 0,
+          end: 20 // show first 20% by default
+        },
+        {
+          type: 'slider', // zoom bar below chart
+          start: 0,
+          end: 20
+        }
+      ],
+      series: [
+        {
+          name: 'TPS',
+          type: 'line',
+          data: this.yData,
+          smooth: true,
+          areaStyle: {},
+          showSymbol: false // hide circle markers (too many points)
+        }
+      ]
+    };
+  }
+}
