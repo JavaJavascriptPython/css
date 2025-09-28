@@ -101,3 +101,22 @@ export class ChartComponent implements OnInit, OnDestroy {
     }
   }
 }
+
+
+
+
+<app-chart
+  [chartTitle]="'My Chart'"
+  [xData]="['A', 'B', 'C']"
+  [yData]="[10, 20, 30]"
+  [chartType]="'scatter'">
+</app-chart>
+
+
+  <app-data-chart
+  [apiUrl]="'https://your-api.com/data'"
+  [dateParam]="'2023-12-01'"
+  [chartTitle]="'TPS Distribution'"
+  [autoRefresh]="true"
+  [refreshInterval]="30000">
+</app-data-chart>
