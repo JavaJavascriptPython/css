@@ -1,0 +1,264 @@
+import { Component, Input, OnInit, OnDestroy, OnChanges, SimpleChanges, ElementRef, ViewChild } from '@angular/core';
+import * as echarts from 'echarts';
+
+@Component({
+  selector: 'app-chart',
+  template: `<div #chartContainer style="width: 100%; height: 400px;"></div>`
+})
+export class ChartComponent implements OnInit, OnDestroy, OnChanges {
+  @ViewChild('chartContainer', { static: true }) chartContainer: ElementRef;
+  
+  @Input() chartTitle: string = 'Chart';
+  @Input() xData: any[] = [];
+  @Input() yData: any[] = [];
+  @Input() chartType: string = 'scatter';
+  @Input() chartColor: string = '#007bff';
+  @Input() height: string = '400px';
+  @Input() enableDataZoom: boolean = true;
+  @Input() rotateXLabels: boolean = true;
+  @Input() labelInterval: number | string = 'auto'; // New: control label spacing
+  @Input() maxLabelWidth: number = 80; // New: max width for labels
+  
+  private chartInstance: any;
+
+  ngOnInit() {
+    console.log('ChartComponent - ngOnInit called');
+    console.log('ChartComponent - Initial inputs:', {
+      chartTitle: this.chartTitle,
+      xData: this.xData,
+      yData: this.yData,
+      chartType: this.chartType,
+      chartColor: this.chartColor
+    });
+    console.log('ChartComponent - xData type:', typeof this.xData, 'Array?', Array.isArray(this.xData));
+    console.log('ChartComponent - yData type:', typeof this.yData, 'Array?', Array.isArray(this.yData));
+    this.initChart();
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    console.log('ChartComponent - ngOnChanges called');
+    console.log('ChartComponent - Changes detected:', changes);
+    
+    for (let propName in changes) {
+      let change = changes[propName];
+      console.log(`ChartComponent - ${propName}: currentValue = ${JSON.stringify(change.currentValue)}, previousValue = ${JSON.stringify(change.previousValue)}, firstChange = ${change.firstChange}`);
+    }
+
+    // Update chart if data changes and chart is already initialized
+    if ((changes.xData || changes.yData) && this.chartInstance) {
+      console.log('ChartComponent - Data changed, updating chart');
+      this.updateChart();
+    }
+  }
+
+  ngOnDestroy() {
+    console.log('ChartComponent - ngOnDestroy called');
+    if (this.chartInstance) {
+      this.chartInstance.dispose();
+    }
+  }
+
+  private initChart() {
+    console.log('ChartComponent - initChart called');
+    console.log('ChartComponent - Chart container element:', this.chartContainer.nativeElement);
+    
+    // Initialize the echarts instance
+    this.chartInstance = echarts.init(this.chartContainer.nativeElement);
+    console.log('ChartComponent - ECharts instance created:', this.chartInstance);
+    
+    // Set chart height
+    this.chartContainer.nativeElement.style.height = this.height;
+    console.log('ChartComponent - Height set to:', this.height);
+    
+    this.updateChart();
+  }
+
+  private updateChart() {
+    console.log('ChartComponent - updateChart called');
+    console.log('ChartComponent - Current data:', {
+      xData: this.xData,
+      yData: this.yData,
+      xDataLength: this.xData?.length,
+      yDataLength: this.yData?.length
+    });
+
+    if (!this.xData || !this.yData || this.xData.length === 0 || this.yData.length === 0) {
+      console.warn('ChartComponent - No data available for chart');
+      return;
+    }
+
+    // Calculate interval for x-axis labels to prevent overcrowding
+    let calculatedInterval: number | string = this.labelInterval;
+    if (this.labelInterval === 'auto') {
+      const dataLength = this.xData.length;
+      if (dataLength > 50) {
+        calculatedInterval = Math.floor(dataLength / 10); // Show ~10 labels
+      } else if (dataLength > 20) {
+        calculatedInterval = Math.floor(dataLength / 8);  // Show ~8 labels
+      } else if (dataLength > 10) {
+        calculatedInterval = 1; // Show every 2nd label
+      } else {
+        calculatedInterval = 0; // Show all labels
+      }
+    }
+
+    console.log('ChartComponent - Calculated label interval:', calculatedInterval);
+
+    const options = {
+      title: { 
+        text: this.chartTitle, 
+        left: 'center',
+        textStyle: {
+          fontSize: 16,
+          fontWeight: 'bold'
+        }
+      },
+      tooltip: { 
+        trigger: 'axis',
+        formatter: (params: any) => {
+          const param = params[0];
+          return `${param.name}<br/>${param.seriesName}: ${param.value}`;
+        }
+      },
+      dataZoom: this.enableDataZoom ? [
+        { 
+          type: 'inside',
+          start: 0,
+          end: 100
+        },
+        { 
+          type: 'slider',
+          start: 0,
+          end: 100,
+          height: 20
+        }
+      ] : [],
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: this.enableDataZoom ? '15%' : '10%',
+        top: '15%',
+        containLabel: true
+      },
+      xAxis: {
+        type: 'category',
+        data: this.xData,
+        axisLabel: { 
+          rotate: this.rotateXLabels ? 45 : 0,
+          interval: calculatedInterval,
+          fontSize: 10,
+          color: '#666',
+          // Truncate long labels
+          formatter: (value: string) => {
+            if (value && value.length > 10) {
+              return value.substring(0, 10) + '...';
+            }
+            return value;
+          },
+          // Better spacing
+          margin: 8,
+          hideOverlap: true
+        },
+        axisLine: {
+          lineStyle: {
+            color: '#ccc'
+          }
+        },
+        axisTick: {
+          alignWithLabel: true,
+          length: 3
+        }
+      },
+      yAxis: { 
+        type: 'value',
+        name: 'Values',
+        nameLocation: 'middle',
+        nameGap: 50,
+        nameTextStyle: {
+          fontSize: 12,
+          color: '#666'
+        },
+        axisLabel: {
+          fontSize: 10,
+          color: '#666'
+        },
+        axisLine: {
+          lineStyle: {
+            color: '#ccc'
+          }
+        },
+        splitLine: {
+          lineStyle: {
+            color: '#f0f0f0',
+            type: 'dashed'
+          }
+        }
+      },
+      series: [{
+        name: 'Data Points',
+        type: this.chartType,
+        data: this.yData,
+        smooth: true,
+        lineStyle: { 
+          color: this.chartColor,
+          width: 2
+        },
+        itemStyle: { 
+          color: this.chartColor,
+          borderColor: '#fff',
+          borderWidth: 1
+        },
+        symbolSize: this.chartType === 'scatter' ? 6 : 4,
+        emphasis: {
+          itemStyle: {
+            shadowBlur: 10,
+            shadowColor: this.chartColor
+          }
+        }
+      }]
+    };
+
+    console.log('ChartComponent - Chart options:', options);
+    console.log('ChartComponent - Chart instance exists:', !!this.chartInstance);
+
+    if (this.chartInstance) {
+      try {
+        this.chartInstance.setOption(options, true);
+        console.log('ChartComponent - Chart options applied successfully');
+      } catch (error) {
+        console.error('ChartComponent - Error setting chart options:', error);
+      }
+      
+      // Resize chart when window is resized
+      setTimeout(() => {
+        try {
+          this.chartInstance.resize();
+          console.log('ChartComponent - Chart resized');
+        } catch (error) {
+          console.error('ChartComponent - Error resizing chart:', error);
+        }
+      }, 100);
+    } else {
+      console.error('ChartComponent - Chart instance not available');
+    }
+  }
+
+  // Method to update chart data dynamically
+  updateData(xData: any[], yData: any[]) {
+    console.log('ChartComponent - updateData called with:', { xData, yData });
+    this.xData = xData;
+    this.yData = yData;
+    this.updateChart();
+  }
+
+  // Method to refresh chart
+  refresh() {
+    console.log('ChartComponent - refresh called');
+    if (this.chartInstance) {
+      this.chartInstance.resize();
+      console.log('ChartComponent - Chart refreshed');
+    } else {
+      console.warn('ChartComponent - Cannot refresh: chart instance not available');
+    }
+  }
+}
