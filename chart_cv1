@@ -1,11 +1,97 @@
-import { Component, Input, OnInit, OnDestroy, ElementRef, ViewChild } from '@angular/core';
+import { Component } from '@angular/core';
+
+@Component({
+  selector: 'app-root',
+  template: `
+    <div style="padding: 20px;">
+      <h1>Minimal Chart Test - Check Console!</h1>
+      
+      <!-- Test 1: Direct hardcoded values -->
+      <div style="border: 1px solid red; padding: 10px; margin: 10px 0;">
+        <h2>Test 1: Direct Hardcoded Values</h2>
+        <app-chart
+          chartTitle="Direct Test"
+          [xData]="['A','B','C','D','E']"
+          [yData]="[100,200,300,400,500]"
+          chartType="scatter">
+        </app-chart>
+      </div>
+
+      <!-- Test 2: Component properties -->
+      <div style="border: 1px solid blue; padding: 10px; margin: 10px 0;">
+        <h2>Test 2: Component Properties</h2>
+        <p>myXData: {{ myXData | json }}</p>
+        <p>myYData: {{ myYData | json }}</p>
+        <app-chart
+          chartTitle="Property Test"
+          [xData]="myXData"
+          [yData]="myYData"
+          chartType="scatter">
+        </app-chart>
+      </div>
+
+      <!-- Test 3: Simple component -->
+      <div style="border: 1px solid green; padding: 10px; margin: 10px 0;">
+        <h2>Test 3: Simple Component</h2>
+        <app-simple-test></app-simple-test>
+      </div>
+
+      <!-- Debug info -->
+      <div style="background: #f0f0f0; padding: 10px; margin: 10px 0;">
+        <h3>Debug Info:</h3>
+        <button (click)="logEverything()">Log Everything</button>
+        <p>myXData type: {{ typeof myXData }}, Array: {{ isArray(myXData) }}, Length: {{ myXData?.length }}</p>
+        <p>myYData type: {{ typeof myYData }}, Array: {{ isArray(myYData) }}, Length: {{ myYData?.length }}</p>
+        <p>ECharts available: {{ echartsAvailable }}</p>
+      </div>
+    </div>
+  `
+})
+export class AppComponent {
+  myXData = ['06:00:01','06:00:02','06:00:03','06:00:04','06:00:05'];
+  myYData = [2177, 1234, 7654, 5642, 3123];
+
+  constructor() {
+    console.log('=== APP COMPONENT CONSTRUCTOR ===');
+    console.log('myXData:', this.myXData);
+    console.log('myYData:', this.myYData);
+    console.log('=================================');
+  }
+
+  get echartsAvailable(): boolean {
+    return typeof (window as any).echarts !== 'undefined';
+  }
+
+  isArray(value: any): boolean {
+    return Array.isArray(value);
+  }
+
+  logEverything() {
+    console.log('=== MANUAL DEBUG LOG ===');
+    console.log('myXData:', this.myXData);
+    console.log('myYData:', this.myYData);
+    console.log('myXData type:', typeof this.myXData);
+    console.log('myYData type:', typeof this.myYData);
+    console.log('myXData isArray:', Array.isArray(this.myXData));
+    console.log('myYData isArray:', Array.isArray(this.myYData));
+    console.log('ECharts global:', (window as any).echarts);
+    console.log('========================');
+  }
+}
+
+
+
+
+
+
+import { Component, Input, OnInit, OnDestroy, OnChanges, SimpleChanges, ElementRef, ViewChild } from '@angular/core';
 import * as echarts from 'echarts';
 
 @Component({
   selector: 'app-chart',
   template: `<div #chartContainer style="width: 100%; height: 400px;"></div>`
 })
-export class ChartComponent implements OnInit, OnDestroy {
+export class ChartComponent implements OnInit, OnDestroy, OnChanges {
   @ViewChild('chartContainer', { static: true }) chartContainer: ElementRef;
   
   @Input() chartTitle: string = 'Chart';
@@ -28,7 +114,25 @@ export class ChartComponent implements OnInit, OnDestroy {
       chartType: this.chartType,
       chartColor: this.chartColor
     });
+    console.log('ChartComponent - xData type:', typeof this.xData, 'Array?', Array.isArray(this.xData));
+    console.log('ChartComponent - yData type:', typeof this.yData, 'Array?', Array.isArray(this.yData));
     this.initChart();
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    console.log('ChartComponent - ngOnChanges called');
+    console.log('ChartComponent - Changes detected:', changes);
+    
+    for (let propName in changes) {
+      let change = changes[propName];
+      console.log(`ChartComponent - ${propName}: currentValue = ${JSON.stringify(change.currentValue)}, previousValue = ${JSON.stringify(change.previousValue)}, firstChange = ${change.firstChange}`);
+    }
+
+    // Update chart if data changes and chart is already initialized
+    if ((changes.xData || changes.yData) && this.chartInstance) {
+      console.log('ChartComponent - Data changed, updating chart');
+      this.updateChart();
+    }
   }
 
   ngOnDestroy() {
@@ -150,5 +254,3 @@ export class ChartComponent implements OnInit, OnDestroy {
     }
   }
 }
-
-
