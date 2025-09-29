@@ -1,0 +1,77 @@
+// api.service.ts
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class ApiService {
+  private baseUrl = 'https://your-api-url.com/data'; // replace with real API
+
+  constructor(private http: HttpClient) {}
+
+  getData(startDate: string, endDate: string): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}?start=${startDate}&end=${endDate}`);
+  }
+}
+
+
+
+
+// parent.component.ts
+import { Component } from '@angular/core';
+import { ApiService } from '../api.service';
+
+@Component({
+  selector: 'app-parent',
+  templateUrl: './parent.component.html'
+})
+export class ParentComponent {
+  startDate: string;
+  endDate: string;
+  data: any;
+
+  constructor(private apiService: ApiService) {}
+
+  submitDates() {
+    if (this.startDate && this.endDate) {
+      this.apiService.getData(this.startDate, this.endDate)
+        .subscribe(response => {
+          this.data = response;
+        });
+    }
+  }
+}
+
+
+<!-- parent.component.html -->
+<form (ngSubmit)="submitDates()">
+  <input type="date" [(ngModel)]="startDate" name="startDate">
+  <input type="date" [(ngModel)]="endDate" name="endDate">
+  <button type="submit">Submit</button>
+</form>
+
+<!-- Pass JSON down -->
+<app-tps-chart [data]="data"></app-tps-chart>
+
+
+// tps-chart.component.ts
+import { Component, Input } from '@angular/core';
+
+@Component({
+  selector: 'app-tps-chart',
+  templateUrl: './tps-chart.component.html'
+})
+export class TpsChartComponent {
+  @Input() data: any;
+}
+
+
+
+<!-- tps-chart.component.html -->
+<div *ngIf="data">
+  <h3>Chart Data</h3>
+  <pre>{{ data | json }}</pre>
+  <!-- Later: plug this into chart library -->
+</div>
