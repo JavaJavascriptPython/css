@@ -1,0 +1,45 @@
+import { Component, AfterViewInit } from '@angular/core';
+import * as echarts from 'echarts';
+
+@Component({
+  selector: 'app-scatter-chart',
+  template: `<div id="scatterChart" style="width:100%; height:500px;"></div>`
+})
+export class ScatterChartComponent implements AfterViewInit {
+
+  xdata: number[] = [];  
+  ydata: number[] = [];
+
+  ngAfterViewInit() {
+    // Example: generate large dataset (replace with your API data)
+    for (let i = 0; i < 60 * 60 * 17; i++) {
+      this.xdata.push(i);
+      this.ydata.push(Math.sin(i / 100) * 100);
+    }
+
+    const chartDom = document.getElementById('scatterChart')!;
+    const myChart = echarts.init(chartDom, null, { renderer: 'canvas' });  // 👈 Force canvas renderer
+
+    const option = {
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'cross' }
+      },
+      xAxis: {
+        type: 'category',
+        data: this.xdata,
+        show: false   // hide if too dense
+      },
+      yAxis: {
+        type: 'value'
+      },
+      series: [{
+        type: 'scatter',
+        data: this.xdata.map((x, i) => [x, this.ydata[i]]),
+        symbolSize: 2,    // make points small for performance
+      }]
+    };
+
+    myChart.setOption(option);
+  }
+}
