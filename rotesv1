@@ -1,0 +1,223 @@
+import { NgModule } from '@angular/core';
+import { Routes, RouterModule } from '@angular/router';
+
+import { DashboardComponent } from './dashboard/dashboard.component';
+import { ReportsComponent } from './reports/reports.component';
+import { SalesReportComponent } from './reports/sales-report/sales-report.component';
+import { FinanceReportComponent } from './reports/finance-report/finance-report.component';
+import { SettingsComponent } from './settings/settings.component';
+
+const routes: Routes = [
+  { path: 'dashboard', component: DashboardComponent },
+  { 
+    path: 'reports', component: ReportsComponent,
+    children: [
+      { path: 'sales', component: SalesReportComponent },
+      { path: 'finance', component: FinanceReportComponent }
+    ]
+  },
+  { path: 'settings', component: SettingsComponent },
+  { path: '', redirectTo: '/dashboard', pathMatch: 'full' }
+];
+
+@NgModule({
+  imports: [RouterModule.forRoot(routes)],
+  exports: [RouterModule]
+})
+export class AppRoutingModule {}
+
+
+
+
+
+
+
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { MatSidenavModule } from '@angular/material/sidenav';
+import { MatListModule } from '@angular/material/list';
+import { MatIconModule } from '@angular/material/icon';
+import { MatExpansionModule } from '@angular/material/expansion';
+
+@NgModule({
+  imports: [
+    BrowserAnimationsModule,
+    MatSidenavModule,
+    MatListModule,
+    MatIconModule,
+    MatExpansionModule
+  ]
+})
+export class AppModule {}
+
+
+
+
+
+
+
+const routes: Routes = [
+  { path: 'dashboard', component: DashboardComponent },
+  {
+    path: 'reports',
+    children: [
+      { path: 'sales', component: SalesReportComponent },
+      { path: 'finance', component: FinanceReportComponent }
+    ]
+  },
+  { path: 'settings', component: SettingsComponent },
+  { path: '', redirectTo: '/dashboard', pathMatch: 'full' }
+];
+
+
+
+
+<mat-sidenav-container class="app-container">
+
+  <!-- Sidebar -->
+  <mat-sidenav #drawer mode="side" [(opened)]="opened" class="sidebar">
+    <div class="sidebar-header">
+      <img src="assets/logo.png" alt="App Logo" class="logo">
+      <h3 class="app-title">MyApp</h3>
+    </div>
+
+    <app-sidebar></app-sidebar>
+
+    <!-- Logout Button -->
+    <div class="logout-section">
+      <button mat-raised-button color="warn" (click)="logout()">
+        <mat-icon>exit_to_app</mat-icon>
+        Logout
+      </button>
+    </div>
+  </mat-sidenav>
+
+  <!-- Main Content -->
+  <mat-sidenav-content class="content">
+    <mat-toolbar color="primary">
+      <button mat-icon-button (click)="drawer.toggle()" class="menu-btn">
+        <mat-icon>menu</mat-icon>
+      </button>
+      <span>My Application</span>
+    </mat-toolbar>
+
+    <div class="page-content">
+      <router-outlet></router-outlet>
+    </div>
+  </mat-sidenav-content>
+
+</mat-sidenav-container>
+
+
+
+
+
+import { Component } from '@angular/core';
+
+@Component({
+  selector: 'app-root',
+  templateUrl: './app.component.html',
+  styleUrls: ['./app.component.css']
+})
+export class AppComponent {
+  opened = true;
+
+  logout() {
+    // Here you can clear tokens/sessionStorage and redirect
+    console.log("User logged out!");
+  }
+}
+
+
+
+
+.app-container {
+  height: 100vh;
+}
+
+.sidebar {
+  width: 240px;
+  display: flex;
+  flex-direction: column;
+  background: #1e293b; /* dark slate */
+  color: white;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #334155;
+}
+
+.logo {
+  width: 40px;
+  height: 40px;
+  margin-right: 8px;
+}
+
+.app-title {
+  color: white;
+  font-size: 18px;
+  margin: 0;
+}
+
+.logout-section {
+  margin-top: auto;
+  padding: 16px;
+  border-top: 1px solid #334155;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.page-content {
+  padding: 16px;
+}
+
+.menu-btn {
+  margin-right: 12px;
+}
+
+
+
+
+
+
+
+<mat-sidenav-container class="app-container">
+  <mat-sidenav mode="side" opened class="sidebar">
+    <app-sidebar></app-sidebar>
+  </mat-sidenav>
+
+  <mat-sidenav-content class="content">
+    <router-outlet></router-outlet>
+  </mat-sidenav-content>
+</mat-sidenav-container>
+
+
+
+
+
+
+import { Component } from '@angular/core';
+
+@Component({
+  selector: 'app-sidebar',
+  templateUrl: './sidebar.component.html',
+  styleUrls: ['./sidebar.component.css']
+})
+export class SidebarComponent {
+  menuItems = [
+    { label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
+    {
+      label: 'Reports', icon: 'bar_chart', children: [
+        { label: 'Sales Report', route: '/reports/sales' },
+        { label: 'Finance Report', route: '/reports/finance' }
+      ]
+    },
+    { label: 'Settings', icon: 'settings', route: '/settings' }
+  ];
+}
