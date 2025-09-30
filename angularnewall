@@ -1,0 +1,278 @@
+<div *ngIf="auth.isLoggedIn(); else loginPage" class="app-container">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <img src="assets/logo.png" alt="logo" class="logo">
+      <span class="app-title">Pret Dashboard</span>
+    </div>
+
+    <ul class="menu">
+      <li><a routerLink="/dashboard">Dashboard</a></li>
+      <li>
+        <a href="javascript:void(0)">TPS</a>
+        <ul class="submenu">
+          <li><a routerLink="/tps/graph">TPS Graph</a></li>
+          <li><a routerLink="/tps/table">TPS Table</a></li>
+        </ul>
+      </li>
+    </ul>
+
+    <div class="logout-section">
+      <button class="logout-btn" (click)="logout()">Logout</button>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <div class="main-content">
+    <div class="topbar">
+      <button class="menu-btn" (click)="toggleSidebar()">☰</button>
+      <span class="title">Pret Dashboard</span>
+      <span class="spacer"></span>
+      <div class="user-info" *ngIf="auth.getUsername()">
+        <span class="user-icon">👤</span>
+        <span>{{ auth.getUsername() }}</span>
+      </div>
+    </div>
+
+    <div class="page-content">
+      <router-outlet></router-outlet>
+    </div>
+  </div>
+
+</div>
+
+<!-- Login page -->
+<ng-template #loginPage>
+  <router-outlet></router-outlet>
+</ng-template>
+
+
+
+
+
+
+export class AppComponent {
+  title = 'Pret Dashboard';
+
+  constructor(public auth: AuthService) {}
+
+  logout() {
+    this.auth.logout();
+  }
+
+  toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    if (sidebar) sidebar.classList.toggle('collapsed');
+  }
+}
+
+
+
+
+
+
+<div class="app-container">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <img src="assets/logo.png" alt="logo" class="logo">
+      <span class="app-title">Pret Dashboard</span>
+    </div>
+
+    <ul class="menu">
+      <li><a routerLink="/dashboard">Dashboard</a></li>
+      <li>
+        <a href="javascript:void(0)">TPS</a>
+        <ul class="submenu">
+          <li><a routerLink="/tps/graph">TPS Graph</a></li>
+          <li><a routerLink="/tps/table">TPS Table</a></li>
+        </ul>
+      </li>
+    </ul>
+
+    <div class="logout-section">
+      <button class="logout-btn" (click)="logout()">Logout</button>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <div class="main-content">
+    <div class="topbar">
+      <button class="menu-btn" (click)="toggleSidebar()">☰</button>
+      <span class="title">Pret Dashboard</span>
+      <span class="spacer"></span>
+      <div class="user-info" *ngIf="auth.getUsername()">
+        <span class="user-icon">👤</span>
+        <span>{{ auth.getUsername() }}</span>
+      </div>
+    </div>
+
+    <div class="page-content">
+      <router-outlet></router-outlet>
+    </div>
+  </div>
+
+</div>
+
+
+
+
+
+
+
+/* Container */
+.app-container {
+  display: flex;
+  height: 100vh;
+  font-family: Arial, sans-serif;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 250px;
+  background: #1e293b;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  transition: all 0.3s;
+}
+.sidebar.collapsed { width: 60px; }
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.logo { width: 40px; height: 40px; margin-right: 12px; }
+.app-title { font-weight: bold; font-size: 18px; }
+.menu { list-style: none; padding: 0; margin: 0; }
+.menu li { padding: 12px 16px; cursor: pointer; }
+.menu li a { color: white; text-decoration: none; display: block; }
+.menu li:hover { background: #334155; }
+.submenu { display: none; list-style: none; padding-left: 16px; }
+.menu li:hover .submenu { display: block; }
+
+.logout-section {
+  margin-top: auto;
+  padding: 16px;
+}
+.logout-btn {
+  width: 100%;
+  padding: 8px;
+  background: #ef4444;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+/* Main content */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.topbar {
+  background: #3b82f6;
+  color: white;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+}
+.menu-btn { font-size: 20px; background: none; border: none; color: white; cursor: pointer; }
+.title { font-weight: bold; margin-left: 8px; }
+.spacer { flex: 1; }
+.user-info { display: flex; align-items: center; }
+.user-icon { margin-right: 6px; }
+
+.page-content {
+  padding: 16px;
+  background: #f5f6fa;
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sidebar { position: absolute; left: -250px; height: 100%; z-index: 1000; }
+  .sidebar.show { left: 0; }
+}
+
+
+
+
+
+
+
+<div class="login-wrapper">
+  <div class="login-card">
+    <div class="logo-row">
+      <img src="assets/logo.png" alt="logo" class="logo-sm">
+      <h2>Pret Dashboard</h2>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="submit()">
+      <input type="text" placeholder="Username" formControlName="username" class="input-field">
+      <input type="password" placeholder="Password" formControlName="password" class="input-field">
+      <button type="submit" class="login-btn" [disabled]="loading">
+        <span *ngIf="!loading">Login</span>
+        <span *ngIf="loading">Loading...</span>
+      </button>
+    </form>
+  </div>
+</div>
+
+
+
+
+
+
+
+
+.login-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: linear-gradient(to bottom, #edf2f7, #ffffff);
+}
+.login-card {
+  width: 360px;
+  padding: 24px;
+  border-radius: 12px;
+  background: white;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+}
+.logo-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 24px;
+}
+.logo-sm { width: 48px; height: 48px; margin-right: 12px; }
+.input-field {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 16px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+.login-btn {
+  width: 100%;
+  padding: 12px;
+  background: #3b82f6;
+  border: none;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.login-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+
+
+
+
+
