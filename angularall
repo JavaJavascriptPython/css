@@ -1,0 +1,917 @@
+// app.module.ts
+import { BrowserModule } from '@angular/platform-browser';
+import { NgModule } from '@angular/core';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
+
+// Material modules
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { MatSidenavModule } from '@angular/material/sidenav';
+import { MatListModule } from '@angular/material/list';
+import { MatIconModule } from '@angular/material/icon';
+import { MatExpansionModule } from '@angular/material/expansion';
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatButtonModule } from '@angular/material/button';
+import { MatInputModule } from '@angular/material/input';
+import { MatCardModule } from '@angular/material/card';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+
+import { AppRoutingModule } from './app-routing.module';
+import { AppComponent } from './app.component';
+import { SidebarComponent } from './sidebar/sidebar.component';
+import { LoginComponent } from './login/login.component';
+import { DashboardComponent } from './dashboard/dashboard.component';
+import { TpsComponent } from './tps/tps.component';
+import { TpsGraphComponent } from './tps/tps-graph.component';
+import { TpsTableComponent } from './tps/tps-table.component';
+
+import { AuthService } from './services/auth.service';
+import { ApiService } from './services/api.service';
+import { AuthGuard } from './services/auth.guard';
+import { TokenInterceptor } from './services/token-interceptor';
+
+@NgModule({
+  declarations: [
+    AppComponent,
+    SidebarComponent,
+    LoginComponent,
+    DashboardComponent,
+    TpsComponent,
+    TpsGraphComponent,
+    TpsTableComponent
+  ],
+  imports: [
+    BrowserModule,
+    BrowserAnimationsModule,
+    AppRoutingModule,
+    FormsModule,
+    ReactiveFormsModule,
+    HttpClientModule,
+
+    // Material
+    MatSidenavModule,
+    MatListModule,
+    MatIconModule,
+    MatExpansionModule,
+    MatToolbarModule,
+    MatButtonModule,
+    MatInputModule,
+    MatCardModule,
+    MatSnackBarModule,
+    MatProgressSpinnerModule
+  ],
+  providers: [
+    AuthService,
+    ApiService,
+    AuthGuard,
+    { provide: HTTP_INTERCEPTORS, useClass: TokenInterceptor, multi: true }
+  ],
+  bootstrap: [AppComponent]
+})
+export class AppModule { }
+
+
+
+
+
+
+
+
+
+
+// app-routing.module.ts
+import { NgModule } from '@angular/core';
+import { Routes, RouterModule } from '@angular/router';
+
+import { LoginComponent } from './login/login.component';
+import { DashboardComponent } from './dashboard/dashboard.component';
+import { TpsComponent } from './tps/tps.component';
+import { TpsGraphComponent } from './tps/tps-graph.component';
+import { TpsTableComponent } from './tps/tps-table.component';
+
+import { AuthGuard } from './services/auth.guard';
+
+const routes: Routes = [
+  { path: 'login', component: LoginComponent },
+  { path: '', redirectTo: 'dashboard', pathMatch: 'full', canActivate: [AuthGuard] },
+
+  // Protected pages
+  { path: 'dashboard', component: DashboardComponent, canActivate: [AuthGuard] },
+  {
+    path: 'tps', component: TpsComponent, canActivate: [AuthGuard], children: [
+      { path: 'graph', component: TpsGraphComponent },
+      { path: 'table', component: TpsTableComponent },
+      { path: '', redirectTo: 'graph', pathMatch: 'full' }
+    ]
+  },
+
+  // fallback
+  { path: '**', redirectTo: 'dashboard' }
+];
+
+@NgModule({
+  imports: [RouterModule.forRoot(routes)],
+  exports: [RouterModule]
+})
+export class AppRoutingModule { }
+
+
+
+
+
+
+
+
+
+// app.component.ts
+import { Component } from '@angular/core';
+import { AuthService } from './services/auth.service';
+import { Router } from '@angular/router';
+
+@Component({
+  selector: 'app-root',
+  templateUrl: './app.component.html',
+  styleUrls: ['./app.component.css']
+})
+export class AppComponent {
+  title = 'Pret Dashboard';
+  opened = true; // sidenav open by default on desktop
+
+  constructor(public auth: AuthService, private router: Router) {}
+
+  logout() {
+    this.auth.logout();
+    this.router.navigate(['/login']);
+  }
+}
+
+
+
+
+
+
+
+<!-- app.component.html -->
+<mat-sidenav-container class="app-container">
+
+  <mat-sidenav #drawer class="sidebar" mode="side" [(opened)]="opened" [fixedInViewport]="true">
+    <!-- Logo and title -->
+    <div class="sidebar-header">
+      <img src="assets/logo.png" alt="logo" class="logo">
+      <div class="title-block">
+        <div class="app-title">Pret</div>
+        <div class="app-sub">Dashboard</div>
+      </div>
+    </div>
+
+    <!-- Sidebar menu -->
+    <app-sidebar></app-sidebar>
+
+    <!-- Logout fixed at bottom of sidebar -->
+    <div class="logout-section">
+      <button mat-raised-button color="warn" (click)="logout()">
+        <mat-icon>exit_to_app</mat-icon>
+        Logout
+      </button>
+    </div>
+  </mat-sidenav>
+
+  <mat-sidenav-content class="content">
+    <mat-toolbar color="primary" class="topbar">
+      <button mat-icon-button (click)="drawer.toggle()" class="menu-btn" aria-label="Toggle sidenav">
+        <mat-icon>menu</mat-icon>
+      </button>
+      <span class="toolbar-title">{{ title }}</span>
+      <span class="spacer"></span>
+      <div *ngIf="auth.getUsername()" class="user-info">
+        <mat-icon>account_circle</mat-icon>
+        <span class="username">{{ auth.getUsername() }}</span>
+      </div>
+    </mat-toolbar>
+
+    <div class="page-content">
+      <router-outlet></router-outlet>
+    </div>
+  </mat-sidenav-content>
+
+</mat-sidenav-container>
+
+
+
+
+
+
+/* app.component.css */
+.app-container {
+  height: 100vh;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 64px);
+}
+
+.page-content {
+  padding: 16px;
+  background: #f6f9fc;
+  min-height: calc(100vh - 64px);
+}
+
+/* Sidebar styling */
+.sidebar {
+  width: 260px;
+  background: linear-gradient(180deg,#0f1724,#122034);
+  color: white;
+  display: flex;
+  flex-direction: column;
+}
+
+/* header */
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.logo {
+  width: 44px;
+  height: 44px;
+  margin-right: 12px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: white;
+}
+.app-title {
+  font-weight: 700;
+  font-size: 18px;
+}
+.app-sub {
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+/* logout at bottom */
+.logout-section {
+  margin-top: auto;
+  padding: 16px;
+  border-top: 1px solid rgba(255,255,255,0.03);
+}
+.menu-btn {
+  margin-right: 12px;
+}
+
+/* small adjustments */
+.user-info {
+  display: flex;
+  align-items: center;
+}
+.username {
+  margin-left: 8px;
+}
+.spacer {
+  flex: 1 1 auto;
+}
+
+/* Responsiveness: overlay for small screens */
+@media (max-width: 768px) {
+  .sidebar { width: 220px; }
+  mat-sidenav[mode] { position: absolute; }
+}
+
+
+
+
+
+
+
+
+
+// services/auth.service.ts
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { tap } from 'rxjs/operators';
+import { Observable, of } from 'rxjs';
+
+@Injectable()
+export class AuthService {
+  // Key for localStorage
+  private tokenKey = 'jwt_token';
+  private usernameKey = 'username';
+  // Replace with your auth URL
+  private authUrl = 'https://api.example.com/auth/login';
+
+  constructor(private http: HttpClient) {}
+
+  // call backend with username/password, expect { token: '...', username: '...' }
+  login(username: string, password: string): Observable<any> {
+    return this.http.post<any>(this.authUrl, { username, password })
+      .pipe(
+        tap(res => {
+          if (res && res.token) {
+            localStorage.setItem(this.tokenKey, res.token);
+            if (res.username) {
+              localStorage.setItem(this.usernameKey, res.username);
+            } else {
+              localStorage.setItem(this.usernameKey, username);
+            }
+          }
+        })
+      );
+  }
+
+  logout() {
+    localStorage.removeItem(this.tokenKey);
+    localStorage.removeItem(this.usernameKey);
+  }
+
+  getToken(): string | null {
+    return localStorage.getItem(this.tokenKey);
+  }
+
+  isLoggedIn(): boolean {
+    return !!this.getToken();
+  }
+
+  getUsername(): string | null {
+    return localStorage.getItem(this.usernameKey);
+  }
+}
+
+
+
+
+
+
+
+
+// services/token-interceptor.ts
+import { Injectable } from '@angular/core';
+import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent, HttpErrorResponse } from '@angular/common/http';
+import { Observable, throwError } from 'rxjs';
+import { AuthService } from './auth.service';
+import { catchError } from 'rxjs/operators';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { Router } from '@angular/router';
+
+@Injectable()
+export class TokenInterceptor implements HttpInterceptor {
+  constructor(private auth: AuthService, private snack: MatSnackBar, private router: Router) {}
+
+  intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+    const token = this.auth.getToken();
+    let authReq = req;
+    if (token) {
+      // Clone request and set Authorization header
+      authReq = req.clone({
+        setHeaders: { Authorization: `Bearer ${token}` }
+      });
+    }
+
+    return next.handle(authReq).pipe(
+      catchError((err: HttpErrorResponse) => {
+        // Handle 401/403 globally
+        if (err.status === 401) {
+          this.snack.open('Session expired. Please login again.', 'Close', { duration: 3000 });
+          this.auth.logout();
+          this.router.navigate(['/login']);
+        } else if (err.status === 403) {
+          this.snack.open('Access not allowed.', 'Close', { duration: 2500 });
+        } else {
+          // Optionally show other errors
+          const msg = err.error && err.error.message ? err.error.message : 'Server error';
+          this.snack.open(msg, 'Close', { duration: 2500 });
+        }
+        return throwError(err);
+      })
+    );
+  }
+}
+
+
+
+
+
+
+
+// services/auth.guard.ts
+import { Injectable } from '@angular/core';
+import { CanActivate, Router, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
+import { AuthService } from './auth.service';
+
+@Injectable()
+export class AuthGuard implements CanActivate {
+  constructor(private auth: AuthService, private router: Router) {}
+
+  canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): boolean {
+    if (this.auth.isLoggedIn()) {
+      return true;
+    }
+    // Not logged in, send to login
+    this.router.navigate(['/login'], { queryParams: { returnUrl: state.url } });
+    return false;
+  }
+}
+
+
+
+
+
+
+
+// services/api.service.ts
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+
+@Injectable()
+export class ApiService {
+  private base = 'https://api.example.com'; // replace with your base URL
+
+  constructor(private http: HttpClient) {}
+
+  // Get TPS graph data
+  getTpsGraph(): Observable<any> {
+    return this.http.get(`${this.base}/tps/graph`);
+  }
+
+  // Get TPS table data
+  getTpsTable(): Observable<any> {
+    return this.http.get(`${this.base}/tps/table`);
+  }
+}
+
+
+
+
+
+
+
+// sidebar/sidebar.component.ts
+import { Component } from '@angular/core';
+import { Router } from '@angular/router';
+
+@Component({
+  selector: 'app-sidebar',
+  templateUrl: './sidebar.component.html',
+  styleUrls: ['./sidebar.component.css']
+})
+export class SidebarComponent {
+  // Menu config
+  menuItems = [
+    { label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
+    {
+      label: 'TPS', icon: 'show_chart', children: [
+        { label: 'TPS Graph', route: '/tps/graph' },
+        { label: 'TPS Table', route: '/tps/table' }
+      ]
+    }
+  ];
+
+  constructor(private router: Router) {}
+
+  navigate(route: string) {
+    this.router.navigate([route]);
+  }
+}
+
+
+
+
+
+
+
+<!-- sidebar/sidebar.component.html -->
+<mat-nav-list>
+  <ng-container *ngFor="let item of menuItems">
+    <!-- simple link -->
+    <a mat-list-item *ngIf="!item.children" (click)="navigate(item.route)">
+      <mat-icon matListIcon>{{ item.icon }}</mat-icon>
+      <span class="menu-label">{{ item.label }}</span>
+    </a>
+
+    <!-- parent with children -->
+    <mat-expansion-panel *ngIf="item.children" class="expansion">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <mat-icon>{{ item.icon }}</mat-icon>
+          <span class="menu-label">{{ item.label }}</span>
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+
+      <mat-nav-list>
+        <a mat-list-item *ngFor="let child of item.children" (click)="navigate(child.route)">
+          <span class="child-label">{{ child.label }}</span>
+        </a>
+      </mat-nav-list>
+    </mat-expansion-panel>
+  </ng-container>
+</mat-nav-list>
+
+
+
+
+
+
+
+
+/* sidebar/sidebar.component.css */
+.mat-list-item, .mat-expansion-panel-header {
+  color: white !important;
+}
+
+.menu-label {
+  margin-left: 8px;
+  font-weight: 600;
+}
+
+.child-label {
+  padding-left: 8px;
+  font-size: 14px;
+}
+
+.expansion {
+  background: transparent;
+  box-shadow: none;
+  margin: 0;
+}
+
+.mat-expansion-panel-header {
+  padding-left: 16px;
+}
+
+
+
+
+
+
+
+// login/login.component.ts
+import { Component } from '@angular/core';
+import { AuthService } from '../services/auth.service';
+import { Router, ActivatedRoute } from '@angular/router';
+import { FormGroup, FormBuilder, Validators } from '@angular/forms';
+import { MatSnackBar } from '@angular/material/snack-bar';
+
+@Component({
+  selector: 'app-login',
+  templateUrl: './login.component.html',
+  styleUrls: ['./login.component.css']
+})
+export class LoginComponent {
+  form: FormGroup;
+  loading = false;
+  returnUrl: string;
+
+  constructor(
+    private fb: FormBuilder,
+    private auth: AuthService,
+    private router: Router,
+    private route: ActivatedRoute,
+    private snack: MatSnackBar
+  ) {
+    this.form = this.fb.group({
+      username: ['', Validators.required],
+      password: ['', Validators.required]
+    });
+
+    this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
+  }
+
+  submit() {
+    if (this.form.invalid) { return; }
+    this.loading = true;
+    const { username, password } = this.form.value;
+
+    this.auth.login(username, password).subscribe(
+      res => {
+        this.loading = false;
+        // if login successful, redirect
+        this.snack.open('Login successful', 'Close', { duration: 1500 });
+        this.router.navigateByUrl(this.returnUrl);
+      },
+      err => {
+        this.loading = false;
+        // Backend will return error (401/403). Show message.
+        const msg = err.error && err.error.message ? err.error.message : 'Login failed';
+        this.snack.open(msg, 'Close', { duration: 3000 });
+      }
+    );
+  }
+}
+
+
+
+
+
+
+
+<!-- login/login.component.html -->
+<div class="login-wrapper">
+  <mat-card class="login-card">
+    <div class="logo-row">
+      <img src="assets/logo.png" alt="logo" class="logo-sm">
+      <h2>Pret Dashboard</h2>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="submit()">
+      <mat-form-field class="full">
+        <input matInput placeholder="Username" formControlName="username" autocomplete="username">
+      </mat-form-field>
+
+      <mat-form-field class="full">
+        <input matInput placeholder="Password" type="password" formControlName="password" autocomplete="current-password">
+      </mat-form-field>
+
+      <div class="actions">
+        <button mat-raised-button color="primary" type="submit" [disabled]="loading">
+          <mat-spinner *ngIf="loading" diameter="18"></mat-spinner>
+          <span *ngIf="!loading">Login</span>
+        </button>
+      </div>
+    </form>
+  </mat-card>
+</div>
+
+
+
+
+
+
+
+/* login/login.component.css */
+.login-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: calc(100vh - 64px);
+  background: linear-gradient(180deg,#edf2f7,#ffffff);
+  padding: 20px;
+}
+.login-card {
+  width: 360px;
+  padding: 24px;
+  border-radius: 8px;
+}
+
+.logo-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.logo-sm {
+  width: 48px;
+  height: 48px;
+  margin-right: 12px;
+}
+.full { width: 100%; display: block; margin-bottom: 12px; }
+.actions { display:flex; justify-content: flex-end; }
+
+
+
+
+
+
+
+// dashboard/dashboard.component.ts
+import { Component } from '@angular/core';
+
+@Component({
+  selector: 'app-dashboard',
+  templateUrl: './dashboard.component.html',
+  styleUrls: ['./dashboard.component.css']
+})
+export class DashboardComponent {}
+
+
+
+
+<!-- dashboard/dashboard.component.html -->
+<div class="dash">
+  <h2>Welcome to Pret Dashboard</h2>
+  <p>Use the sidebar to navigate to TPS Graph and TPS Table.</p>
+</div>
+
+
+
+/* dashboard.component.css */
+.dash {
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+}
+
+
+
+
+
+
+// tps/tps.component.ts
+import { Component } from '@angular/core';
+
+@Component({
+  selector: 'app-tps',
+  templateUrl: './tps.component.html',
+  styleUrls: ['./tps.component.css']
+})
+export class TpsComponent {}
+
+
+
+
+
+
+<!-- tps/tps.component.html -->
+<div class="tps-shell">
+  <h3>TPS</h3>
+  <div class="tps-content">
+    <!-- child routes render here -->
+    <router-outlet></router-outlet>
+  </div>
+</div>
+
+
+
+
+
+/* tps/tps.component.css */
+.tps-shell {
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+}
+.tps-content { margin-top: 12px; }
+
+
+
+
+
+// tps/tps-graph.component.ts
+import { Component, OnInit } from '@angular/core';
+import { ApiService } from '../services/api.service';
+
+@Component({
+  selector: 'app-tps-graph',
+  templateUrl: './tps-graph.component.html',
+  styleUrls: ['./tps-graph.component.css']
+})
+export class TpsGraphComponent implements OnInit {
+  loading = false;
+  data: any;
+  error: string;
+
+  constructor(private api: ApiService) {}
+
+  ngOnInit() {
+    this.fetchGraph();
+  }
+
+  fetchGraph() {
+    this.loading = true;
+    this.api.getTpsGraph().subscribe(
+      res => {
+        this.loading = false;
+        this.data = res; // use with your chart library (e.g., ECharts)
+      },
+      err => {
+        this.loading = false;
+        this.error = (err.error && err.error.message) ? err.error.message : 'Error fetching graph data';
+      }
+    );
+  }
+}
+
+
+
+
+
+
+<!-- tps/tps-graph.component.html -->
+<div class="graph-card">
+  <h4>TPS Graph</h4>
+
+  <div *ngIf="loading" class="center">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+
+  <div *ngIf="error" class="error">
+    {{ error }}
+  </div>
+
+  <div *ngIf="data && !loading">
+    <!-- Placeholder: integrate ECharts or Chart.js here -->
+    <div class="chart-placeholder">
+      <!-- Example: render your ECharts chart using `data` -->
+      <pre style="white-space:pre-wrap;">{{ data | json }}</pre>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+/* tps/tps-graph.component.css */
+.graph-card { background: #fff; padding: 12px; border-radius: 6px; }
+.center { display:flex; justify-content:center; padding: 16px; }
+.error { color: #b00020; padding: 8px 0; }
+.chart-placeholder { min-height: 240px; border: 1px dashed #e6eef9; padding: 12px; }
+
+
+
+
+
+
+
+
+// tps/tps-table.component.ts
+import { Component, OnInit } from '@angular/core';
+import { ApiService } from '../services/api.service';
+
+@Component({
+  selector: 'app-tps-table',
+  templateUrl: './tps-table.component.html',
+  styleUrls: ['./tps-table.component.css']
+})
+export class TpsTableComponent implements OnInit {
+  loading = false;
+  rows: any[] = [];
+  error: string;
+
+  constructor(private api: ApiService) {}
+
+  ngOnInit() {
+    this.fetchTable();
+  }
+
+  fetchTable() {
+    this.loading = true;
+    this.api.getTpsTable().subscribe(
+      res => {
+        this.loading = false;
+        this.rows = Array.isArray(res) ? res : (res.data || []);
+      },
+      err => {
+        this.loading = false;
+        this.error = (err.error && err.error.message) ? err.error.message : 'Error fetching table data';
+      }
+    );
+  }
+}
+
+
+
+
+
+
+<!-- tps/tps-table.component.html -->
+<div class="table-card">
+  <h4>TPS Table</h4>
+
+  <div *ngIf="loading" class="center">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+
+  <div *ngIf="error" class="error">{{ error }}</div>
+
+  <table *ngIf="!loading && rows.length" class="tps-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Account</th>
+        <th>TPS Value</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let r of rows; let i = index">
+        <td>{{ i + 1 }}</td>
+        <td>{{ r.account || r.name || '-' }}</td>
+        <td>{{ r.tps || r.value || '-' }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div *ngIf="!loading && !rows.length" class="empty">No data available</div>
+</div>
+
+
+
+
+
+
+/* tps/tps-table.component.css */
+.table-card { background:#fff; padding:12px; border-radius:6px; }
+.tps-table { width:100%; border-collapse: collapse; margin-top:12px; }
+.tps-table th, .tps-table td { text-align:left; padding:8px; border-bottom: 1px solid #efefef; }
+.center { display:flex; justify-content:center; padding: 16px; }
+.error { color: #b00020; padding: 8px 0; }
+.empty { color: #666; padding: 8px 0; }
+
+
