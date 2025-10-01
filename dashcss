@@ -1,0 +1,125 @@
+<div class="dashboard-wrapper">
+  <!-- Cards Grid -->
+  <section class="cards-grid">
+    <div class="card" *ngFor="let card of cards; let i = index">
+      <h3>Card {{ i + 1 }}</h3>
+      <p>Some summary data here...</p>
+    </div>
+  </section>
+
+  <!-- Graphs Grid -->
+  <section class="graphs-grid">
+    <div class="graph" *ngFor="let graph of graphs; let i = index">
+      <h4>Graph {{ i + 1 }}</h4>
+      <!-- Replace this with actual chart component -->
+      <div class="graph-placeholder">📊</div>
+    </div>
+  </section>
+</div>
+
+
+
+
+
+
+.dashboard-wrapper {
+  padding: 20px;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1e293b, #3b82f6);
+  font-family: 'Segoe UI', sans-serif;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+/* ===== Cards Grid ===== */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-gap: 20px;
+}
+
+.card {
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.2);
+}
+.card h3 {
+  font-size: 16px;
+  color: #1e293b;
+  margin-bottom: 8px;
+}
+.card p {
+  font-size: 14px;
+  color: #4b5563;
+}
+
+/* ===== Graphs Grid ===== */
+.graphs-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-gap: 24px;
+}
+
+.graph {
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  display: flex;
+  flex-direction: column;
+}
+.graph:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.2);
+}
+.graph h4 {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 12px;
+}
+.graph-placeholder {
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #3b82f6;
+  font-size: 28px;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  background: #f9fafb;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 1200px) {
+  .cards-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 900px) {
+  .cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .graphs-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .cards-grid {
+    grid-template-columns: 1fr;
+  }
+  .graphs-grid {
+    grid-template-columns: 1fr;
+  }
+}
