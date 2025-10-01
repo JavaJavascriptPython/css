@@ -1,0 +1,726 @@
+<div *ngIf="auth.isLoggedIn(); else loginPage" class="app-container">
+
+  <!-- Sidebar -->
+  <nav class="sidebar" [class.collapsed]="isCollapsed">
+    <div class="sidebar-header">
+      <img src="assets/logo.png" alt="logo" class="logo">
+      <span class="app-title" *ngIf="!isCollapsed">Pret Dashboard</span>
+    </div>
+
+    <ul class="menu">
+      <li>
+        <a routerLink="/dashboard">
+          <span class="icon">🏠</span>
+          <span class="label" *ngIf="!isCollapsed">Dashboard</span>
+        </a>
+      </li>
+      <li>
+        <a href="javascript:void(0)" (click)="toggleSubmenu()">
+          <span class="icon">📊</span>
+          <span class="label" *ngIf="!isCollapsed">TPS</span>
+          <span class="arrow" *ngIf="!isCollapsed">▾</span>
+        </a>
+        <ul class="submenu" [class.open]="submenuOpen">
+          <li><a routerLink="/tps/graph">TPS Graph</a></li>
+          <li><a routerLink="/tps/table">TPS Table</a></li>
+        </ul>
+      </li>
+    </ul>
+
+    <div class="logout-section">
+      <button class="logout-btn" (click)="logout()">
+        <span class="icon">🚪</span>
+        <span class="label" *ngIf="!isCollapsed">Logout</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <div class="main-content">
+    <header class="topbar">
+      <button class="menu-btn" (click)="toggleSidebar()">☰</button>
+      <span class="title">{{ title }}</span>
+      <span class="spacer"></span>
+      <div class="user-info" *ngIf="auth.getUsername()">
+        <span class="user-icon">👤</span>
+        <span>{{ auth.getUsername() }}</span>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <router-outlet></router-outlet>
+    </div>
+  </div>
+</div>
+
+<!-- Login page -->
+<ng-template #loginPage>
+  <router-outlet></router-outlet>
+</ng-template>
+
+
+
+
+
+/* Base layout */
+.app-container {
+  display: flex;
+  height: 100vh;
+  background: #f5f7fb;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 240px;
+  background: #1e293b;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s ease;
+  overflow: hidden;
+}
+
+.sidebar.collapsed {
+  width: 70px;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  margin-right: 12px;
+}
+.app-title {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* Menu */
+.menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  flex: 1;
+}
+.menu li {
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.menu a {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  color: #cbd5e1;
+  text-decoration: none;
+  transition: background 0.2s, padding-left 0.3s;
+}
+.menu a:hover {
+  background: #334155;
+  padding-left: 20px;
+}
+.menu .icon {
+  width: 24px;
+  text-align: center;
+  margin-right: 12px;
+}
+.menu .label {
+  flex: 1;
+}
+.menu .arrow {
+  font-size: 12px;
+}
+
+/* Submenu */
+.submenu {
+  list-style: none;
+  padding-left: 40px;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+.submenu.open {
+  max-height: 200px; /* enough for children */
+}
+.submenu li a {
+  padding: 10px 0;
+  display: block;
+  font-size: 14px;
+  color: #e2e8f0;
+}
+.submenu li a:hover {
+  color: #fff;
+}
+
+/* Logout */
+.logout-section {
+  padding: 16px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+.logout-btn {
+  width: 100%;
+  background: #ef4444;
+  border: none;
+  color: white;
+  padding: 10px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: background 0.2s;
+}
+.logout-btn:hover {
+  background: #dc2626;
+}
+.logout-btn .icon {
+  margin-right: 8px;
+}
+
+/* Topbar */
+.topbar {
+  height: 56px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.menu-btn {
+  font-size: 20px;
+  background: none;
+  border: none;
+  margin-right: 12px;
+  cursor: pointer;
+}
+.title {
+  font-weight: 600;
+}
+.spacer {
+  flex: 1;
+}
+.user-info {
+  display: flex;
+  align-items: center;
+  color: #374151;
+  font-size: 14px;
+}
+.user-icon {
+  margin-right: 6px;
+}
+
+/* Main content */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.page-content {
+  padding: 20px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sidebar {
+    position: absolute;
+    height: 100%;
+    z-index: 1000;
+    left: -240px;
+  }
+  .sidebar.collapsed {
+    left: 0;
+    width: 240px;
+  }
+  .main-content {
+    flex: 1;
+  }
+}
+
+
+
+
+
+
+
+export class AppComponent {
+  title = 'Pret Dashboard';
+  isCollapsed = false;
+  submenuOpen = false;
+
+  constructor(public auth: AuthService) {}
+
+  toggleSidebar() {
+    this.isCollapsed = !this.isCollapsed;
+  }
+
+  toggleSubmenu() {
+    this.submenuOpen = !this.submenuOpen;
+  }
+
+  logout() {
+    this.auth.logout();
+  }
+}
+
+
+
+
+
+
+
+
+<div class="login-wrapper">
+  <div class="login-card">
+    <div class="logo-row">
+      <img src="assets/logo.png" alt="logo" class="logo-sm">
+      <h2 class="app-title">Pret Dashboard</h2>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="submit()">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input id="username" type="text" formControlName="username" placeholder="Enter your username">
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input id="password" type="password" formControlName="password" placeholder="Enter your password">
+      </div>
+
+      <div class="actions">
+        <button type="submit" [disabled]="loading">
+          <span *ngIf="loading">⏳ Logging in...</span>
+          <span *ngIf="!loading">Login</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+
+
+
+
+
+
+/* Full-page wrapper */
+.login-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: linear-gradient(135deg, #1e293b, #3b82f6);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* Card */
+.login-card {
+  width: 360px;
+  background: #fff;
+  padding: 32px 28px;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.logo-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+.logo-sm {
+  width: 48px;
+  height: 48px;
+  margin-right: 12px;
+  border-radius: 8px;
+}
+.app-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+/* Form */
+.form-group {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+}
+.form-group label {
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: #374151;
+}
+.form-group input {
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  outline: none;
+  transition: border 0.3s, box-shadow 0.3s;
+}
+.form-group input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 4px rgba(59,130,246,0.4);
+}
+
+/* Button */
+.actions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+.actions button {
+  background: #3b82f6;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.2s;
+}
+.actions button:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+.actions button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Mobile */
+@media (max-width: 420px) {
+  .login-card {
+    width: 90%;
+    padding: 24px;
+  }
+}
+
+
+
+
+
+
+
+
+/* App container */
+.app-container {
+  display: flex;
+  height: 100vh;
+  background: #f5f7fb;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 240px;
+  background: linear-gradient(180deg, #1e293b, #111827);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s ease;
+  overflow: hidden;
+}
+.sidebar.collapsed {
+  width: 70px;
+}
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  margin-right: 12px;
+}
+.app-title {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* Menu */
+.menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  flex: 1;
+}
+.menu li {
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.menu a {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  color: #cbd5e1;
+  text-decoration: none;
+  transition: background 0.2s, padding-left 0.3s;
+}
+.menu a:hover {
+  background: rgba(59,130,246,0.15);
+  padding-left: 20px;
+  color: #fff;
+}
+.menu .icon {
+  width: 24px;
+  text-align: center;
+  margin-right: 12px;
+}
+.menu .label {
+  flex: 1;
+}
+.menu .arrow {
+  font-size: 12px;
+}
+
+/* Submenu */
+.submenu {
+  list-style: none;
+  padding-left: 40px;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+.submenu.open {
+  max-height: 200px;
+}
+.submenu li a {
+  padding: 10px 0;
+  display: block;
+  font-size: 14px;
+  color: #e2e8f0;
+}
+.submenu li a:hover {
+  color: #fff;
+}
+
+/* Logout */
+.logout-section {
+  padding: 16px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+.logout-btn {
+  width: 100%;
+  background: #ef4444;
+  border: none;
+  color: white;
+  padding: 10px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: background 0.2s, transform 0.2s;
+}
+.logout-btn:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+.logout-btn .icon {
+  margin-right: 8px;
+}
+
+/* Topbar */
+.topbar {
+  height: 56px;
+  background: linear-gradient(90deg, #1e293b, #3b82f6);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  color: #fff;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+.menu-btn {
+  font-size: 20px;
+  background: none;
+  border: none;
+  margin-right: 12px;
+  color: white;
+  cursor: pointer;
+}
+.title {
+  font-weight: 600;
+}
+.spacer { flex: 1; }
+.user-info {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+}
+.user-icon { margin-right: 6px; }
+
+/* Main content */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.page-content {
+  padding: 20px;
+  flex: 1;
+  overflow-y: auto;
+  background: #f5f7fb;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sidebar {
+    position: absolute;
+    height: 100%;
+    z-index: 1000;
+    left: -240px;
+  }
+  .sidebar.collapsed {
+    left: 0;
+    width: 240px;
+  }
+  .main-content {
+    flex: 1;
+  }
+}
+
+
+
+
+
+
+
+<div class="card">
+  <h2>Dashboard</h2>
+  <p>Welcome to the Pret Dashboard. Use the sidebar to navigate.</p>
+</div>
+
+
+
+
+
+.card {
+  background: #fff;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  animation: fadeIn 0.5s ease;
+}
+.card h2 {
+  margin-bottom: 12px;
+  font-weight: 600;
+  color: #1e293b;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+
+
+
+<div class="card">
+  <h2>TPS Graph</h2>
+  <div class="graph-placeholder">[Graph will render here]</div>
+</div>
+
+
+
+
+.card {
+  background: #fff;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  animation: fadeIn 0.5s ease;
+}
+.graph-placeholder {
+  height: 300px;
+  background: #f1f5f9;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  font-size: 14px;
+  font-style: italic;
+}
+
+
+
+
+
+
+<div class="card">
+  <h2>TPS Table</h2>
+  <table class="modern-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Time</th>
+        <th>Value</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let row of data">
+        <td>{{ row.id }}</td>
+        <td>{{ row.time }}</td>
+        <td>{{ row.value }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+
+
+
+
+.card {
+  background: #fff;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  animation: fadeIn 0.5s ease;
+}
+.modern-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+}
+.modern-table th {
+  background: #3b82f6;
+  color: white;
+  text-align: left;
+  padding: 10px;
+  font-weight: 500;
+}
+.modern-table td {
+  padding: 10px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.modern-table tr:hover td {
+  background: #f9fafb;
+}
+
+
+
+
+
