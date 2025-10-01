@@ -1,0 +1,122 @@
+import { Component, OnInit } from '@angular/core';
+
+@Component({
+  selector: 'app-dashboard',
+  templateUrl: './dashboard.component.html',
+  styleUrls: ['./dashboard.component.css']
+})
+export class DashboardComponent implements OnInit {
+
+  cards: { title: string, value: string, change: string }[] = [];
+  graphs: { title: string, values: number[] }[] = [];
+
+  constructor() {}
+
+  ngOnInit(): void {
+    // Dummy cards: title, value, change
+    this.cards = [
+      { title: 'Total Users', value: '12,430', change: '+4.5%' },
+      { title: 'Active Users', value: '8,920', change: '+2.1%' },
+      { title: 'Transactions', value: '1,54,230', change: '+1.2%' },
+      { title: 'TPS Avg', value: '134/sec', change: '+0.8%' },
+      { title: 'Revenue', value: '$54,000', change: '+6.3%' },
+      { title: 'Errors', value: '74', change: '-1.5%' },
+      { title: 'Latency', value: '220ms', change: '-0.6%' },
+      { title: 'Branches', value: '243', change: '+0.3%' },
+      { title: 'New Users', value: '430', change: '+3.9%' },
+      { title: 'Churn Rate', value: '2.3%', change: '-0.4%' },
+      { title: 'Tickets', value: '134', change: '+2.2%' },
+      { title: 'Resolved', value: '120', change: '+1.8%' },
+      { title: 'Pending', value: '14', change: '-0.5%' },
+      { title: 'Support SLA', value: '98%', change: '+0.2%' },
+      { title: 'Avg Session', value: '12m 40s', change: '+0.7%' }
+    ];
+
+    // Dummy graphs: title + random values
+    this.graphs = [
+      { title: 'User Growth', values: this.generateRandomData(12) },
+      { title: 'TPS Trend', values: this.generateRandomData(12) },
+      { title: 'Revenue Trend', values: this.generateRandomData(12) },
+      { title: 'Error Rate', values: this.generateRandomData(12) },
+      { title: 'Latency Trend', values: this.generateRandomData(12) },
+      { title: 'Transactions Trend', values: this.generateRandomData(12) },
+      { title: 'Churn Trend', values: this.generateRandomData(12) },
+      { title: 'New Users', values: this.generateRandomData(12) },
+      { title: 'Support Tickets', values: this.generateRandomData(12) }
+    ];
+  }
+
+  private generateRandomData(n: number): number[] {
+    return Array.from({ length: n }, () => Math.floor(Math.random() * 100));
+  }
+
+}
+
+
+
+
+
+<div class="dashboard-wrapper">
+
+  <!-- Cards Grid -->
+  <section class="cards-grid">
+    <div class="card" *ngFor="let card of cards">
+      <h3>{{ card.title }}</h3>
+      <p class="value">{{ card.value }}</p>
+      <p class="change" [class.positive]="card.change.startsWith('+')" 
+                       [class.negative]="card.change.startsWith('-')">
+        {{ card.change }}
+      </p>
+    </div>
+  </section>
+
+  <!-- Graphs Grid -->
+  <section class="graphs-grid">
+    <div class="graph" *ngFor="let graph of graphs">
+      <h4>{{ graph.title }}</h4>
+      <div class="graph-placeholder">
+        <svg width="100%" height="80">
+          <polyline 
+            [attr.points]="graph.values.map((v,i)=> i*30+','+(100-v)).join(' ')"
+            fill="none"
+            stroke="#3b82f6"
+            stroke-width="2"
+          />
+        </svg>
+      </div>
+    </div>
+  </section>
+</div>
+
+
+
+
+
+
+/* Cards extra styling */
+.card .value {
+  font-size: 20px;
+  font-weight: bold;
+  color: #111827;
+}
+.card .change {
+  margin-top: 6px;
+  font-size: 13px;
+}
+.card .change.positive {
+  color: #16a34a; /* green */
+}
+.card .change.negative {
+  color: #dc2626; /* red */
+}
+
+/* Graph placeholder tweak */
+.graph-placeholder {
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-radius: 8px;
+  background: #f9fafb;
+}
