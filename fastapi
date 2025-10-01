@@ -1,0 +1,307 @@
+# main.py
+from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from pydantic import BaseModel
+from fastapi_jwt_auth import AuthJWT
+from ldap3 import Server, Connection, ALL
+import requests
+from datetime import timedelta
+import os
+
+app = FastAPI(title="FastAPI LDAP + JWT (access+refresh) + Proxy")
+
+# --------------------
+# Config for fastapi_jwt_auth
+# --------------------
+class Settings:
+    # Change this and load from env in production
+    authjwt_secret_key: str = os.getenv("JWT_SECRET", "change_this_secret")
+    # Optional: set where tokens are read — default reads from Authorization header (Bearer)
+    # authjwt_token_location = {"headers"}
+    # You can also put refresh tokens in cookies for increased security.
+
+@AuthJWT.load_config
+def get_config():
+    return Settings()
+
+# Token expiry config
+ACCESS_EXPIRES_MINUTES = 15
+REFRESH_EXPIRES_DAYS = 7
+
+# LDAP config (edit to your env)
+LDAP_URL = os.getenv("LDAP_URL", "ldap://ldap.example.com")
+USER_DN_TEMPLATE = os.getenv("USER_DN_TEMPLATE", "uid={username},ou=users,dc=example,dc=com")
+
+# Dummy third-party base
+THIRD_PARTY_BASE = "https://httpbin.org"  # demo echo service
+
+# --------------------
+# Pydantic models
+# --------------------
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+class ProxyRequest(BaseModel):
+    __root__: dict
+
+# --------------------
+# LDAP auth helper
+# --------------------
+def ldap_authenticate(username: str, password: str) -> bool:
+    """
+    Try binding to LDAP as the user. Return True if bind success.
+    """
+    user_dn = USER_DN_TEMPLATE.format(username=username)
+    server = Server(LDAP_URL, get_info=ALL)
+    try:
+        conn = Connection(server, user=user_dn, password=password, auto_bind=True)
+        conn.unbind()
+        return True
+    except Exception:
+        return False
+
+# --------------------
+# Login endpoint (returns access + refresh)
+# --------------------
+@app.post("/login")
+def login(payload: LoginRequest, Authorize: AuthJWT = Depends()):
+    username = payload.username.strip()
+    password = payload.password
+    if not username or not password:
+        raise HTTPException(status_code=400, detail="username and password required")
+
+    # 1) authenticate against LDAP
+    if not ldap_authenticate(username, password):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    # 2) create tokens
+    access_expires = timedelta(minutes=ACCESS_EXPIRES_MINUTES)
+    refresh_expires = timedelta(days=REFRESH_EXPIRES_DAYS)
+
+    # Put any claims you want inside tokens. Keep refresh token minimal (subject only).
+    access_token = Authorize.create_access_token(subject=username, user_claims={"sub": username}, expires_time=access_expires)
+    refresh_token = Authorize.create_refresh_token(subject=username, expires_time=refresh_expires)
+
+    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
+
+# --------------------
+# Refresh endpoint (exchange refresh -> new access)
+# --------------------
+@app.post("/refresh")
+def refresh(Authorize: AuthJWT = Depends()):
+    """
+    Requires a valid refresh token (sent in Authorization: Bearer <refresh_token>).
+    Returns a new access token.
+    """
+    try:
+        Authorize.jwt_refresh_token_required()
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Invalid or missing refresh token")
+
+    # subject (username) from refresh token
+    username = Authorize.get_jwt_subject()
+    if not username:
+        raise HTTPException(status_code=401, detail="Invalid refresh token payload")
+
+    access_expires = timedelta(minutes=ACCESS_EXPIRES_MINUTES)
+    new_access = Authorize.create_access_token(subject=username, user_claims={"sub": username}, expires_time=access_expires)
+    return {"access_token": new_access, "token_type": "bearer"}
+
+# --------------------
+# Dependency to check access token
+# --------------------
+http_bearer = HTTPBearer(auto_error=False)
+
+def get_current_user(creds: HTTPAuthorizationCredentials = Depends(http_bearer), Authorize: AuthJWT = Depends()):
+    """
+    Validate access token and return username.
+    Uses Authorization header: Bearer <access_token>
+    """
+    if creds is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing")
+
+    token = creds.credentials
+    try:
+        # decode & verify
+        Authorize.jwt_required()  # this will check token in header again but safe
+    except Exception:
+        # If jwt_required fails, throw 401 (client should attempt to refresh)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid/expired access token")
+
+    username = Authorize.get_jwt_subject()
+    if not username:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+    return username
+
+# --------------------
+# Protected proxy endpoint (example)
+# --------------------
+@app.post("/proxy/{api_name}")
+def proxy(api_name: str, body: ProxyRequest, username: str = Depends(get_current_user)):
+    """
+    Example endpoint that requires a valid access token.
+    Forwards body to a third-party API and returns the response.
+    """
+    third_url = f"{THIRD_PARTY_BASE}/post"  # httpbin => /post echoes back
+    payload = body.__root__
+    try:
+        resp = requests.post(third_url, json=payload, timeout=10)
+    except requests.RequestException as e:
+        raise HTTPException(status_code=502, detail=f"Third-party error: {e}")
+
+    # Return third party response, and optionally metadata like authenticated username
+    try:
+        content = resp.json()
+    except Exception:
+        content = {"text": resp.text}
+    return {"user": username, "third_party_response": content}
+
+# --------------------
+# Optionally add a simple health endpoint
+# --------------------
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
+
+
+
+
+
+
+
+
+
+
+// auth.service.ts
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { tap } from 'rxjs/operators';
+import { Observable } from 'rxjs';
+
+@Injectable({providedIn: 'root'})
+export class AuthService {
+  api = 'http://localhost:8000';
+  constructor(private http: HttpClient) {}
+
+  login(username: string, password: string) {
+    return this.http.post<{access_token: string, refresh_token: string}>(`${this.api}/login`, { username, password })
+      .pipe(tap(tokens => {
+        localStorage.setItem('access_token', tokens.access_token);
+        localStorage.setItem('refresh_token', tokens.refresh_token);
+      }));
+  }
+
+  logout() {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+  }
+
+  getAccessToken(): string | null {
+    return localStorage.getItem('access_token');
+  }
+
+  getRefreshToken(): string | null {
+    return localStorage.getItem('refresh_token');
+  }
+
+  setAccessToken(token: string) {
+    localStorage.setItem('access_token', token);
+  }
+
+  // Call refresh endpoint using the refresh token in Authorization header
+  refreshAccessToken(): Observable<{access_token: string}> {
+    const refresh = this.getRefreshToken();
+    const headers = refresh ? new HttpHeaders().set('Authorization', `Bearer ${refresh}`) : undefined;
+    return this.http.post<{access_token: string}>(`${this.api}/refresh`, {}, { headers });
+  }
+}
+
+
+
+
+
+
+
+
+
+// auth.interceptor.ts
+import { Injectable } from '@angular/core';
+import {
+  HttpInterceptor, HttpRequest, HttpHandler, HttpEvent, HttpErrorResponse
+} from '@angular/common/http';
+import { Observable, throwError, from } from 'rxjs';
+import { AuthService } from './auth.service';
+import { catchError, switchMap } from 'rxjs/operators';
+
+@Injectable()
+export class AuthInterceptor implements HttpInterceptor {
+  private isRefreshing = false;
+
+  constructor(private auth: AuthService) {}
+
+  intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+    const token = this.auth.getAccessToken();
+    let authReq = req;
+    if (token) {
+      authReq = req.clone({
+        setHeaders: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+    }
+
+    return next.handle(authReq).pipe(
+      catchError(error => {
+        if (error instanceof HttpErrorResponse && error.status === 401) {
+          // attempt refresh once
+          if (!this.isRefreshing) {
+            this.isRefreshing = true;
+            return this.auth.refreshAccessToken().pipe(
+              switchMap((res: any) => {
+                this.isRefreshing = false;
+                if (res && res.access_token) {
+                  this.auth.setAccessToken(res.access_token);
+                  const newReq = req.clone({
+                    setHeaders: { Authorization: `Bearer ${res.access_token}` }
+                  });
+                  return next.handle(newReq);
+                } else {
+                  // can't refresh
+                  this.auth.logout();
+                  return throwError(() => error);
+                }
+              }),
+              catchError(err => {
+                this.isRefreshing = false;
+                this.auth.logout();
+                return throwError(() => err);
+              })
+            );
+          } else {
+            // If refresh already in progress, just fail (or queue requests — not implemented here)
+            this.auth.logout();
+            return throwError(() => error);
+          }
+        } else {
+          return throwError(() => error);
+        }
+      })
+    );
+  }
+}
+
+
+
+
+
+
+
+import { HTTP_INTERCEPTORS } from '@angular/common/http';
+import { AuthInterceptor } from './auth.interceptor';
+// ...
+providers: [
+  { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true }
+]
